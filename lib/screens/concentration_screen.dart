@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../services/ambiance_service.dart';
+import '../services/preferences_service.dart';
 
 class ConcentrationScreen extends StatefulWidget {
   const ConcentrationScreen({super.key});
@@ -16,6 +18,10 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
   int remainingTime = 0;
   String selectedAmbiance = 'ocean';
   double volume = 0.5;
+  
+  // Services
+  final AmbianceService _ambianceService = AmbianceService();
+  final PreferencesService _prefsService = PreferencesService();
   
   late AnimationController breathingController;
   late Animation<double> breathingAnimation;
@@ -51,6 +57,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
   void initState() {
     super.initState();
     remainingTime = sessionDuration * 60;
+    _loadPreferences();
     
     // Animation de respiration
     breathingController = AnimationController(
@@ -70,7 +77,34 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
   void dispose() {
     sessionTimer?.cancel();
     breathingController.dispose();
+    _ambianceService.stop();
+    _ambianceService.dispose();
     super.dispose();
+  }
+  
+  // Chargement des préférences utilisateur
+  Future<void> _loadPreferences() async {
+    try {
+      sessionDuration = await _prefsService.getSessionDuration();
+      selectedAmbiance = await _prefsService.getSelectedAmbiance();
+      volume = await _prefsService.getAmbianceVolume();
+      setState(() {
+        remainingTime = sessionDuration * 60;
+      });
+    } catch (e) {
+      print('Erreur chargement préférences: $e');
+    }
+  }
+  
+  // Sauvegarde des préférences
+  Future<void> _savePreferences() async {
+    try {
+      await _prefsService.setSessionDuration(sessionDuration);
+      await _prefsService.setSelectedAmbiance(selectedAmbiance);
+      await _prefsService.setAmbianceVolume(volume);
+    } catch (e) {
+      print('Erreur sauvegarde préférences: $e');
+    }
   }
 
   void startSession() {
@@ -78,6 +112,10 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
       isSessionActive = true;
       remainingTime = sessionDuration * 60;
     });
+    
+    // Démarrer l'ambiance sonore
+    _ambianceService.setVolume(volume);
+    _ambianceService.play(selectedAmbiance);
     
     // Démarrer l'animation de respiration
     breathingController.repeat(reverse: true);
@@ -101,6 +139,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
     sessionTimer?.cancel();
     breathingController.stop();
     breathingController.reset();
+    _ambianceService.stop();
   }
 
   String formatTime(int seconds) {
@@ -276,6 +315,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
                                   sessionDuration = duration;
                                   remainingTime = duration * 60;
                                 });
+                                _savePreferences();
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: sessionDuration == duration
@@ -323,6 +363,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
                               setState(() {
                                 selectedAmbiance = key;
                               });
+                              _savePreferences();
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isSelected
@@ -390,6 +431,10 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
                                 setState(() {
                                   volume = value;
                                 });
+                                _savePreferences();
+                                if (isSessionActive) {
+                                  _ambianceService.setVolume(value);
+                                }
                               },
                               activeColor: currentAmbiance['color'],
                               inactiveColor: Colors.white.withOpacity(0.3),

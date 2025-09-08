@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/tts_service.dart';
+import '../services/preferences_service.dart';
 
 class LectureScreen extends StatefulWidget {
   const LectureScreen({super.key});
@@ -12,6 +14,10 @@ class _LectureScreenState extends State<LectureScreen> {
   int currentSyllableIndex = 0;
   bool isReading = false;
   double fontSize = 36.0;
+  
+  // Services
+  final TTSService _ttsService = TTSService();
+  final PreferencesService _prefsService = PreferencesService();
   
   // Exemple de texte avec syllabes marquées
   final List<Map<String, dynamic>> lessonContent = [
@@ -67,8 +73,27 @@ class _LectureScreenState extends State<LectureScreen> {
   }
 
   void repeatWord() {
-    // TODO: Implémenter la lecture audio TTS
-    print('Reading: ${lessonContent[currentWordIndex]['fullWord']}');
+    final String wordToRead = lessonContent[currentWordIndex]['fullWord'];
+    _ttsService.speak(wordToRead);
+  }
+  
+  // Chargement des préférences utilisateur
+  Future<void> _loadPreferences() async {
+    try {
+      fontSize = await _prefsService.getFontSize();
+      setState(() {});
+    } catch (e) {
+      print('Erreur chargement préférences: $e');
+    }
+  }
+  
+  // Sauvegarde des préférences utilisateur
+  Future<void> _saveFontSize() async {
+    try {
+      await _prefsService.setFontSize(fontSize);
+    } catch (e) {
+      print('Erreur sauvegarde taille police: $e');
+    }
   }
 
   @override
@@ -220,6 +245,7 @@ class _LectureScreenState extends State<LectureScreen> {
                   onPressed: () {
                     setState(() {
                       if (fontSize > 20) fontSize -= 4;
+                      _saveFontSize();
                     });
                   },
                   icon: const Icon(Icons.remove_circle_outline),
@@ -233,6 +259,7 @@ class _LectureScreenState extends State<LectureScreen> {
                   onPressed: () {
                     setState(() {
                       if (fontSize < 60) fontSize += 4;
+                      _saveFontSize();
                     });
                   },
                   icon: const Icon(Icons.add_circle_outline),

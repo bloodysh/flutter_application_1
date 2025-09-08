@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../services/call_service.dart';
+import '../services/notification_service.dart';
 
 class CaregiverScreen extends StatefulWidget {
   const CaregiverScreen({super.key});
@@ -17,6 +19,10 @@ class _CaregiverScreenState extends State<CaregiverScreen>
   Timer? callTimer;
   String callerName = "Patient - Chambre 204";
   String callType = "Appel d'urgence";
+  
+  // Services
+  final CallService _callService = CallService();
+  final NotificationService _notificationService = NotificationService();
   
   late AnimationController alertController;
   late Animation<double> alertAnimation;
@@ -49,6 +55,10 @@ class _CaregiverScreenState extends State<CaregiverScreen>
   void initState() {
     super.initState();
     
+    // Initialiser les services
+    _notificationService.init();
+    _callService.init();
+    
     // Animation d'alerte
     alertController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -80,37 +90,65 @@ class _CaregiverScreenState extends State<CaregiverScreen>
       hasIncomingCall = true;
     });
     alertController.repeat(reverse: true);
+    
+    // Déclencher une notification d'appel d'urgence
+    _notificationService.showEmergencyCallNotification(
+      patientName: "Patient",
+      room: "Chambre 204",
+    );
   }
 
-  void acceptCall() {
+  Future<void> acceptCall() async {
+    // Annuler la notification
+    await _notificationService.cancelAllNotifications();
+    
+    // Rejoindre le canal d'appel d'urgence
+    bool success = await _callService.startEmergencyCall();
+    
+    if (success) {
+      setState(() {
+        hasIncomingCall = false;
+        isInCall = true;
+        callDuration = 0;
+      });
+      
+      alertController.stop();
+      alertController.reset();
+      
+      // Démarrer le timer d'appel
+      callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (mounted) {
+          setState(() {
+            callDuration++;
+          });
+        }
+      });
+    } else {
+      // Échec de connexion
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossible d\'établir la connexion avec le patient.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> rejectCall() async {
+    // Annuler la notification
+    await _notificationService.cancelAllNotifications();
+    
     setState(() {
       hasIncomingCall = false;
-      isInCall = true;
-      callDuration = 0;
-    });
-    
-    alertController.stop();
-    alertController.reset();
-    
-    // Démarrer le timer d'appel
-    callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          callDuration++;
-        });
-      }
-    });
-  }
-
-  void rejectCall() {
-    setState(() {
-      hasIncomingCall = false;
     });
     alertController.stop();
     alertController.reset();
   }
 
-  void endCall() {
+  Future<void> endCall() async {
+    // Terminer l'appel VoIP
+    await _callService.endEmergencyCall();
+    
     setState(() {
       isInCall = false;
       isMuted = false;
@@ -118,7 +156,10 @@ class _CaregiverScreenState extends State<CaregiverScreen>
     callTimer?.cancel();
   }
 
-  void toggleMute() {
+  Future<void> toggleMute() async {
+    // Activer/désactiver le micro
+    await _callService.setMicrophoneMuted(!isMuted);
+    
     setState(() {
       isMuted = !isMuted;
     });

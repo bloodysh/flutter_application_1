@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../services/call_service.dart';
 
 class CallScreen extends StatefulWidget {
   final bool isEmergency;
@@ -17,12 +18,18 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   Timer? connectionTimer;
   int connectionDuration = 0;
   
+  // Service d'appel
+  final CallService _callService = CallService();
+  
   late AnimationController pulseController;
   late Animation<double> pulseAnimation;
 
   @override
   void initState() {
     super.initState();
+    
+    // Initialiser le service d'appel
+    _callService.init();
     
     // Animation de pulsation pour les boutons
     pulseController = AnimationController(
@@ -42,18 +49,34 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   void dispose() {
     connectionTimer?.cancel();
     pulseController.dispose();
+    if (isConnected) {
+      _callService.endEmergencyCall();
+    }
+    _callService.dispose();
     super.dispose();
   }
 
-  void startCall() {
+  Future<void> startCall() async {
     setState(() {
       isConnecting = true;
     });
     
     pulseController.repeat(reverse: true);
     
-    // Simuler la connexion
-    Timer(const Duration(seconds: 3), () {
+    // Démarrer l'appel selon le type
+    bool success = false;
+    if (widget.isEmergency) {
+      // Appel d'urgence via VoIP
+      success = await _callService.startEmergencyCall();
+    } else {
+      // Appel téléphonique classique
+      success = await _callService.makePhoneCall();
+    }
+    
+    if (success) {
+      // Attendre une connexion simulée
+      await Future.delayed(const Duration(seconds: 3));
+      
       if (mounted) {
         setState(() {
           isConnecting = false;
@@ -73,21 +96,47 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           }
         });
       }
-    });
+    } else {
+      // Échec de connexion
+      if (mounted) {
+        setState(() {
+          isConnecting = false;
+        });
+        pulseController.stop();
+        pulseController.reset();
+        
+        // Afficher une alerte d'échec
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible d\'établir la connexion. Veuillez réessayer.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
-  void endCall() {
+  Future<void> endCall() async {
+    // Terminer l'appel selon le type
+    if (widget.isEmergency && isConnected) {
+      await _callService.endEmergencyCall();
+    }
+    
     setState(() {
       isConnecting = false;
       isConnected = false;
       isSpeaking = false;
     });
+    
     connectionTimer?.cancel();
     pulseController.stop();
     Navigator.pop(context);
   }
 
-  void toggleSpeaking() {
+  Future<void> toggleSpeaking() async {
+    // Activer/désactiver le micro pour le talkie-walkie
+    await _callService.setMicrophoneMuted(!isSpeaking);
+    
     setState(() {
       isSpeaking = !isSpeaking;
     });
