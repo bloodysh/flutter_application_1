@@ -31,9 +31,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   
-  assets:
+  assets: []
     # Pour les sons d'ambiance (à ajouter dans les assets du projet)
-    - assets/audio/ocean.mp3
-    - assets/audio/forest.mp3
-    - assets/audio/rain.mp3
-    - assets/audio/birds.mp3
+    # - assets/audio/ocean.mp3
+    # - assets/audio/forest.mp3
+    # - assets/audio/rain.mp3
+    # - assets/audio/birds.mp3

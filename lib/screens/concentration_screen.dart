@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../services/ambiance_service.dart';
 import '../services/preferences_service.dart';
+import '../services/analytics_service.dart';
+import '../services/feedback_service.dart';
 
 class ConcentrationScreen extends StatefulWidget {
   const ConcentrationScreen({super.key});
@@ -22,6 +24,8 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
   // Services
   final AmbianceService _ambianceService = AmbianceService();
   final PreferencesService _prefsService = PreferencesService();
+  final AnalyticsService _analyticsService = AnalyticsService();
+  final FeedbackService _feedbackService = FeedbackService();
   
   late AnimationController breathingController;
   late Animation<double> breathingAnimation;
@@ -58,6 +62,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
     super.initState();
     remainingTime = sessionDuration * 60;
     _loadPreferences();
+    _analyticsService.trackScreenVisit('concentration_screen');
     
     // Animation de respiration
     breathingController = AnimationController(
@@ -133,6 +138,10 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
   }
 
   void stopSession() {
+    final wasCompleted = remainingTime == 0;
+    final originalDuration = sessionDuration * 60;
+    final actualDuration = originalDuration - remainingTime;
+    
     setState(() {
       isSessionActive = false;
     });
@@ -140,6 +149,18 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
     breathingController.stop();
     breathingController.reset();
     _ambianceService.stop();
+    
+    // Analytics: Track session completion
+    _analyticsService.trackConcentrationSession(
+      ambiance: selectedAmbiance,
+      durationMinutes: actualDuration ~/ 60,
+      completedFully: wasCompleted,
+    );
+    
+    // Show feedback after session
+    if (wasCompleted) {
+      _feedbackService.triggerAutomaticFeedback(context, 'concentration');
+    }
   }
 
   String formatTime(int seconds) {

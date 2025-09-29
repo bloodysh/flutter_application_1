@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/home_screen.dart';
+import 'services/analytics_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialiser l'analytics pour le Mois 4
+  await AnalyticsService().startSession();
+  
   runApp(const LyseaApp());
 }
 

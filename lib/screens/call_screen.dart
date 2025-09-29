@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../services/call_service.dart';
+import '../services/analytics_service.dart';
+import '../services/feedback_service.dart';
 
 class CallScreen extends StatefulWidget {
   final bool isEmergency;
@@ -18,8 +20,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   Timer? connectionTimer;
   int connectionDuration = 0;
   
-  // Service d'appel
+  // Services
   final CallService _callService = CallService();
+  final AnalyticsService _analyticsService = AnalyticsService();
+  final FeedbackService _feedbackService = FeedbackService();
   
   late AnimationController pulseController;
   late Animation<double> pulseAnimation;
@@ -27,6 +31,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    
+    // Analytics: Track screen visit
+    _analyticsService.trackScreenVisit('call_screen');
     
     // Initialiser le service d'appel
     _callService.init();
@@ -87,6 +94,13 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         pulseController.stop();
         pulseController.reset();
         
+        // Analytics: Track successful call start
+        _analyticsService.trackCallAttempt(
+          isEmergency: widget.isEmergency,
+          wasSuccessful: true,
+          durationSeconds: 0, // Will be updated when call ends
+        );
+        
         // Démarrer le timer de durée d'appel
         connectionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
           if (mounted) {
@@ -117,9 +131,20 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   }
 
   Future<void> endCall() async {
+    final callDuration = connectionDuration;
+    
     // Terminer l'appel selon le type
     if (widget.isEmergency && isConnected) {
       await _callService.endEmergencyCall();
+    }
+    
+    // Analytics: Track call completion
+    if (isConnected) {
+      _analyticsService.trackCallAttempt(
+        isEmergency: widget.isEmergency,
+        wasSuccessful: true,
+        durationSeconds: callDuration,
+      );
     }
     
     setState(() {
@@ -130,6 +155,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     
     connectionTimer?.cancel();
     pulseController.stop();
+    
+    // Show feedback after call completion
+    if (callDuration > 30) { // Only ask for feedback on longer calls
+      await _feedbackService.triggerAutomaticFeedback(context, 'call');
+    }
+    
     Navigator.pop(context);
   }
 

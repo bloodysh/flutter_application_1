@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../services/call_service.dart';
 import '../services/notification_service.dart';
+import '../services/analytics_service.dart';
+import '../services/feedback_service.dart';
 
 class CaregiverScreen extends StatefulWidget {
   const CaregiverScreen({super.key});
@@ -23,6 +25,8 @@ class _CaregiverScreenState extends State<CaregiverScreen>
   // Services
   final CallService _callService = CallService();
   final NotificationService _notificationService = NotificationService();
+  final AnalyticsService _analyticsService = AnalyticsService();
+  final FeedbackService _feedbackService = FeedbackService();
   
   late AnimationController alertController;
   late Animation<double> alertAnimation;
@@ -54,6 +58,9 @@ class _CaregiverScreenState extends State<CaregiverScreen>
   @override
   void initState() {
     super.initState();
+    
+    // Analytics: Track screen visit
+    _analyticsService.trackScreenVisit('caregiver_screen');
     
     // Initialiser les services
     _notificationService.init();
@@ -115,6 +122,13 @@ class _CaregiverScreenState extends State<CaregiverScreen>
       alertController.stop();
       alertController.reset();
       
+      // Analytics: Track caregiver call acceptance
+      _analyticsService.trackCallAttempt(
+        isEmergency: true,
+        wasSuccessful: true,
+        durationSeconds: 0, // Will be updated when call ends
+      );
+      
       // Démarrer le timer d'appel
       callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (mounted) {
@@ -146,14 +160,28 @@ class _CaregiverScreenState extends State<CaregiverScreen>
   }
 
   Future<void> endCall() async {
+    final finalCallDuration = callDuration;
+    
     // Terminer l'appel VoIP
     await _callService.endEmergencyCall();
+    
+    // Analytics: Track call completion
+    _analyticsService.trackCallAttempt(
+      isEmergency: true,
+      wasSuccessful: true,
+      durationSeconds: finalCallDuration,
+    );
     
     setState(() {
       isInCall = false;
       isMuted = false;
     });
     callTimer?.cancel();
+    
+    // Show caregiver feedback after significant calls
+    if (finalCallDuration > 60) { // Only ask for feedback on calls longer than 1 minute
+      await _feedbackService.showCaregiverFeedbackDialog(context);
+    }
   }
 
   Future<void> toggleMute() async {

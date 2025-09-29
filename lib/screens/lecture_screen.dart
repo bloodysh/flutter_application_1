@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/tts_service.dart';
 import '../services/preferences_service.dart';
+import '../services/analytics_service.dart';
+import '../services/feedback_service.dart';
 
 class LectureScreen extends StatefulWidget {
   const LectureScreen({super.key});
@@ -18,6 +20,15 @@ class _LectureScreenState extends State<LectureScreen> {
   // Services
   final TTSService _ttsService = TTSService();
   final PreferencesService _prefsService = PreferencesService();
+  final AnalyticsService _analyticsService = AnalyticsService();
+  final FeedbackService _feedbackService = FeedbackService();
+  
+  @override
+  void initState() {
+    super.initState();
+    _analyticsService.trackScreenVisit('lecture_screen');
+    _loadPreferences();
+  }
   
   // Exemple de texte avec syllabes marquées
   final List<Map<String, dynamic>> lessonContent = [
@@ -48,6 +59,10 @@ class _LectureScreenState extends State<LectureScreen> {
       if (currentWordIndex < lessonContent.length - 1) {
         currentWordIndex++;
         currentSyllableIndex = 0;
+      } else {
+        // Session de lecture terminée
+        _analyticsService.trackScreenVisit('lecture_completed');
+        _feedbackService.triggerAutomaticFeedback(context, 'reading_session_completed');
       }
     });
   }
@@ -75,6 +90,7 @@ class _LectureScreenState extends State<LectureScreen> {
   void repeatWord() {
     final String wordToRead = lessonContent[currentWordIndex]['fullWord'];
     _ttsService.speak(wordToRead);
+    _analyticsService.trackTTSUsage(wordToRead, true);
   }
   
   // Chargement des préférences utilisateur
