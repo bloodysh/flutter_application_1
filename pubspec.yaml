@@ -15,8 +15,7 @@ dependencies:
   just_audio: ^0.9.36
   # Stockage local pour préférences
   shared_preferences: ^2.2.3
-  # VoIP (simulation)
-  agora_rtc_engine: ^6.4.0
+  # Permissions et utilitaires
   permission_handler: ^11.0.1
   # URL launcher pour appels téléphoniques
   url_launcher: ^6.2.3
@@ -31,9 +30,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   
-  assets: []
-    # Pour les sons d'ambiance (à ajouter dans les assets du projet)
-    # - assets/audio/ocean.mp3
-    # - assets/audio/forest.mp3
-    # - assets/audio/rain.mp3
-    # - assets/audio/birds.mp3
+  assets:
+    # Sons d'ambiance pour le mode concentration
+    - assets/audio/ocean.mp3
+    - assets/audio/forest.mp3
+    - assets/audio/rain.mp3
+    - assets/audio/birds.mp3
