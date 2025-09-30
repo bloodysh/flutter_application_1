@@ -115,9 +115,12 @@ class FeedbackService {
                 ElevatedButton(
                   onPressed: rating != null ? () {
                     _analyticsService.trackFeedback(
-                      feedbackType: 'user',
-                      rating: rating!,
-                      comment: comment,
+
+                      'user',
+                      {
+                        'rating': rating!,
+                        'comment': comment,
+                      },
                     );
                     Navigator.of(context).pop();
                     _showThankYouMessage(context);
@@ -279,9 +282,12 @@ class FeedbackService {
                 ElevatedButton(
                   onPressed: rating != null ? () {
                     _analyticsService.trackFeedback(
-                      feedbackType: 'caregiver',
-                      rating: rating!,
-                      comment: '$selectedCategory: $comment',
+                      'caregiver',
+                      {
+                        'rating': rating!,
+                        'comment': '$selectedCategory: $comment',
+                        'category': selectedCategory,
+                      },
                     );
                     Navigator.of(context).pop();
                     _showThankYouMessage(context);
@@ -344,9 +350,11 @@ class FeedbackService {
               onPressed: () {
                 if (description.isNotEmpty) {
                   _analyticsService.trackUserIssue(
-                    issueType: issueType,
-                    description: description,
-                    screenName: screenName,
+                    issueType,
+                    description,
+                    {
+                      'screenName': screenName,
+                    },
                   );
                   Navigator.of(context).pop();
                   _showThankYouMessage(context);

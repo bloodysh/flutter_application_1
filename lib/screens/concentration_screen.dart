@@ -152,9 +152,13 @@ class _ConcentrationScreenState extends State<ConcentrationScreen>
     
     // Analytics: Track session completion
     _analyticsService.trackConcentrationSession(
-      ambiance: selectedAmbiance,
-      durationMinutes: actualDuration ~/ 60,
-      completedFully: wasCompleted,
+      selectedAmbiance,
+      actualDuration,
+      {
+        'ambiance': selectedAmbiance,
+        'durationMinutes': actualDuration ~/ 60,
+        'completedFully': wasCompleted,
+      },
     );
     
     // Show feedback after session

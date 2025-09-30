@@ -5,10 +5,18 @@ import 'services/analytics_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // Remove forced landscape orientation - let it work naturally
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
+
   // Initialiser l'analytics pour le Mois 4
   await AnalyticsService().startSession();
-  
+
   runApp(const LyseaApp());
 }
 
@@ -17,12 +25,6 @@ class LyseaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Force landscape orientation for better accessibility
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-
     return MaterialApp(
       title: 'Lyséa',
       debugShowCheckedModeBanner: false,

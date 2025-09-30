@@ -96,9 +96,13 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         
         // Analytics: Track successful call start
         _analyticsService.trackCallAttempt(
-          isEmergency: widget.isEmergency,
-          wasSuccessful: true,
-          durationSeconds: 0, // Will be updated when call ends
+          widget.isEmergency ? 'emergency' : 'regular',
+          true,
+          {
+            'isEmergency': widget.isEmergency,
+            'wasSuccessful': true,
+            'durationSeconds': 0, // Will be updated when call ends
+          },
         );
         
         // Démarrer le timer de durée d'appel
@@ -141,9 +145,13 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     // Analytics: Track call completion
     if (isConnected) {
       _analyticsService.trackCallAttempt(
-        isEmergency: widget.isEmergency,
-        wasSuccessful: true,
-        durationSeconds: callDuration,
+        widget.isEmergency ? 'emergency' : 'regular',
+        true,
+        {
+          'isEmergency': widget.isEmergency,
+          'wasSuccessful': true,
+          'durationSeconds': callDuration,
+        },
       );
     }
     

@@ -9,62 +9,105 @@ class AmbianceService {
   bool _isPlaying = false;
   double _volume = 0.5;
   String _currentAmbiance = '';
-  
-  // En production, ces assets devraient être inclus dans le pubspec.yaml
-  // Pour le développement, on simule avec des URLs
+
+  // Local asset paths for ambiance sounds
   final Map<String, String> _ambianceSources = {
-    'ocean': 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=ocean-waves-112802.mp3',
-    'forest': 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_c62541d071.mp3?filename=forest-with-small-river-birds-and-nature-field-recording-6735.mp3',
-    'rain': 'https://cdn.pixabay.com/download/audio/2021/04/07/audio_c84404951b.mp3?filename=light-rain-ambient-114354.mp3',
-    'birds': 'https://cdn.pixabay.com/download/audio/2021/04/08/audio_c5776b0de7.mp3?filename=birds-singing-in-spring-01-6771.mp3',
+    'ocean': 'assets/audio/ocean.mp3',
+    'forest': 'assets/audio/forest.mp3',
+    'rain': 'assets/audio/rain.mp3',
+    'birds': 'assets/audio/birds.mp3',
   };
-  
+
   bool get isPlaying => _isPlaying;
   String get currentAmbiance => _currentAmbiance;
-  
+  double get volume => _volume;
+
   Future<void> _initPlayer() async {
     _audioPlayer ??= AudioPlayer();
   }
 
   Future<void> play(String ambianceKey) async {
-    if (!_ambianceSources.containsKey(ambianceKey)) return;
-    
+    if (!_ambianceSources.containsKey(ambianceKey)) {
+      print('Ambiance key not found: $ambianceKey');
+      return;
+    }
+
     await _initPlayer();
     await stop();
-    
+
     try {
       _currentAmbiance = ambianceKey;
-      await _audioPlayer!.setUrl(_ambianceSources[ambianceKey]!);
+      final assetPath = _ambianceSources[ambianceKey]!;
+
+      // Use setAsset for local audio files instead of setUrl
+      await _audioPlayer!.setAsset(assetPath);
       await _audioPlayer!.setVolume(_volume);
-      await _audioPlayer!.setLoopMode(LoopMode.one); // Lecture en boucle
+      await _audioPlayer!.setLoopMode(LoopMode.one); // Loop the audio
       await _audioPlayer!.play();
       _isPlaying = true;
-    } catch (e) {
-      print('Erreur de lecture audio: $e');
-      _isPlaying = false;
-    }
-  }
 
-  Future<void> stop() async {
-    if (_audioPlayer != null && _isPlaying) {
-      await _audioPlayer!.stop();
+      print('Successfully started playing: $ambianceKey');
+    } catch (e) {
+      print('Error playing audio: $e');
+      print('Asset path: ${_ambianceSources[ambianceKey]}');
       _isPlaying = false;
       _currentAmbiance = '';
     }
   }
 
-  Future<void> setVolume(double volume) async {
-    _volume = volume;
+  Future<void> stop() async {
     if (_audioPlayer != null && _isPlaying) {
-      await _audioPlayer!.setVolume(volume);
+      try {
+        await _audioPlayer!.stop();
+        _isPlaying = false;
+        _currentAmbiance = '';
+        print('Audio stopped successfully');
+      } catch (e) {
+        print('Error stopping audio: $e');
+      }
+    }
+  }
+
+  Future<void> pause() async {
+    if (_audioPlayer != null && _isPlaying) {
+      try {
+        await _audioPlayer!.pause();
+        _isPlaying = false;
+        print('Audio paused');
+      } catch (e) {
+        print('Error pausing audio: $e');
+      }
+    }
+  }
+
+  Future<void> resume() async {
+    if (_audioPlayer != null && !_isPlaying && _currentAmbiance.isNotEmpty) {
+      try {
+        await _audioPlayer!.play();
+        _isPlaying = true;
+        print('Audio resumed');
+      } catch (e) {
+        print('Error resuming audio: $e');
+      }
+    }
+  }
+
+  Future<void> setVolume(double volume) async {
+    _volume = volume.clamp(0.0, 1.0);
+    if (_audioPlayer != null) {
+      try {
+        await _audioPlayer!.setVolume(_volume);
+        print('Volume set to: $_volume');
+      } catch (e) {
+        print('Error setting volume: $e');
+      }
     }
   }
 
   void dispose() {
-    if (_audioPlayer != null) {
-      _audioPlayer!.dispose();
-      _audioPlayer = null;
-      _isPlaying = false;
-    }
+    _audioPlayer?.dispose();
+    _audioPlayer = null;
+    _isPlaying = false;
+    _currentAmbiance = '';
   }
 }

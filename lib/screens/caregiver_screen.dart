@@ -124,9 +124,13 @@ class _CaregiverScreenState extends State<CaregiverScreen>
       
       // Analytics: Track caregiver call acceptance
       _analyticsService.trackCallAttempt(
-        isEmergency: true,
-        wasSuccessful: true,
-        durationSeconds: 0, // Will be updated when call ends
+        'emergency',
+        true,
+        {
+          'isEmergency': true,
+          'wasSuccessful': true,
+          'durationSeconds': 0, // Will be updated when call ends
+        },
       );
       
       // Démarrer le timer d'appel
@@ -167,9 +171,13 @@ class _CaregiverScreenState extends State<CaregiverScreen>
     
     // Analytics: Track call completion
     _analyticsService.trackCallAttempt(
-      isEmergency: true,
-      wasSuccessful: true,
-      durationSeconds: finalCallDuration,
+      'emergency',
+      true,
+      {
+        'isEmergency': true,
+        'wasSuccessful': true,
+        'durationSeconds': finalCallDuration,
+      },
     );
     
     setState(() {
