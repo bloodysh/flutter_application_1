@@ -23,8 +23,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _caregiverNumber = '';
 
   // Paramètres d'accessibilité
-  bool _highContrastMode = false;
-  bool _simplifiedInterface = false;
   bool _autoFeedback = true;
 
   @override
@@ -144,24 +142,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
                 suffix: 'px',
               ),
-              _buildSwitchSetting(
-                'Contraste élevé',
-                _highContrastMode,
-                Icons.contrast,
-                (value) {
-                  setState(() => _highContrastMode = value);
-                  // TODO: Implémenter le mode contraste élevé
-                },
-              ),
-              _buildSwitchSetting(
-                'Interface simplifiée',
-                _simplifiedInterface,
-                Icons.view_compact,
-                (value) {
-                  setState(() => _simplifiedInterface = value);
-                  // TODO: Implémenter l'interface simplifiée
-                },
-              ),
             ]),
 
             const SizedBox(height: 20),
@@ -212,24 +192,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ]),
 
-            const SizedBox(height: 20),
-
-            // Section Rapport d'utilisation (pour les soignants)
-            _buildSectionHeader('Suivi d\'Utilisation'),
-            _buildSettingsCard([
-              _buildActionButton(
-                'Voir le rapport d\'utilisation',
-                Icons.analytics,
-                () => _showUsageReport(context),
-                const Color(0xFF27AE60),
-              ),
-              _buildActionButton(
-                'Évaluation soignant',
-                Icons.medical_services,
-                () => _feedbackService.showCaregiverFeedbackDialog(context),
-                const Color(0xFF34495E),
-              ),
-            ]),
 
             const SizedBox(height: 20),
 
@@ -418,93 +380,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _showUsageReport(BuildContext context) async {
-    final report = await _analyticsService.generateUsageReport();
-    
-    if (!context.mounted) return;
-    
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Rapport d\'Utilisation'),
-          content: SizedBox(
-            width: 400,
-            height: 400,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildReportSection('Résumé', {
-                    'Sessions totales': '${report['summary']['total_sessions']}',
-                    'Temps d\'utilisation': '${report['summary']['total_usage_minutes']} min',
-                    'Durée moyenne': '${report['summary']['average_session_length'].toStringAsFixed(1)} min',
-                  }),
-                  const SizedBox(height: 16),
-                  _buildReportSection('Écrans visités', 
-                    Map<String, String>.from(
-                      report['screen_usage'].map((k, v) => MapEntry(k.toString(), v.toString()))
-                    )
-                  ),
-                  const SizedBox(height: 16),
-                  _buildReportSection('Feedback utilisateur', {
-                    'Nombre d\'avis': '${report['user_feedback']['total_feedback']}',
-                    'Note moyenne': '${report['user_feedback']['average_rating']?.toStringAsFixed(1) ?? 'N/A'}',
-                  }),
-                  const SizedBox(height: 16),
-                  _buildReportSection('Problèmes signalés', {
-                    'Nombre total': '${report['reported_issues']}',
-                  }),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Fermer'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildReportSection(String title, Map<String, String> data) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2C3E50),
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...data.entries.map((entry) {
-          return Padding(
-            padding: const EdgeInsets.only(left: 16, bottom: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(entry.key, style: const TextStyle(fontSize: 14)),
-                Text(
-                  entry.value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ],
-    );
-  }
-
   Future<void> _showResetDialog(BuildContext context, String type) async {
     String title, content;
     if (type == 'preferences') {
@@ -562,3 +437,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 }
+
